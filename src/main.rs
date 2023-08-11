@@ -10,14 +10,12 @@ const UNISWAP_V2_ROUTER_ADDRESS: &str = "0x7a250d5630B4cF539739dF2C5dAcb4c659F24
 const MIM_ADDRESS: &str = "0x99D8a9C45b2ecA8864373A26D1459e3Dff1e17F3";
 const WETH_ADDRESS: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";   
 
-// https://stackoverflow.com/questions/26593387/how-can-i-get-the-current-time-in-milliseconds
 fn get_epoch_milliseconds() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis()
 }
-
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,8 +27,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weth_address: Address = WETH_ADDRESS.parse()?;
     let uniswap_v2_router_address: Address = UNISWAP_V2_ROUTER_ADDRESS.parse()?;
 
-    
-    // fork avalanche mainnet
     let anvil = Anvil::new().fork(RPC_URL).spawn();
     info!("Anvil running at `{}`", anvil.endpoint());
     let provider = Provider::<Http>::try_from(anvil.endpoint())?;
