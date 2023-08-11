@@ -29,6 +29,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let anvil = Anvil::new().fork(RPC_URL).spawn();
     info!("Anvil running at `{}`", anvil.endpoint());
+    //let provider = Provider::<Http>::try_from("http://localhost:8545")?;
+
     let provider = Provider::<Http>::try_from(anvil.endpoint())?;
     let chain_id = provider.get_chainid().await.unwrap().as_u64();
     info!("chain id: {chain_id}");
@@ -44,18 +46,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router_contract = IUNISWAPV2ROUTER::new(uniswap_v2_router_address, client.clone());
     let mim_contract = IERC20::new(mim_address, client.clone());
     
-    let mim_decimals = 18;
+    let weth_amount_in = parse_units(0.1, 18)?.into();
 
-    // swap to 5 MIM
-    let amount_out = parse_units(5, mim_decimals)?.into();
-
-    println!("proposed amount of MIM to buy in wei {}", amount_out);
+    let amounts_out = router_contract.get_amounts_out(weth_amount_in, [weth_address, mim_address].to_vec()).call().await?;
+    println!("proposed amount of MIM to buy in wei {} for 0.1 ETH", amounts_out[1]);
 
     let deadline = U256::from(get_epoch_milliseconds()) + U256::from(60 * 1000);
 
-    let eth_max_spend = parse_units(5, 18)?;
+    let eth_max_spend = parse_units(1, 18)?;
 
-    let tx_receipt = router_contract.swap_eth_for_exact_tokens(amount_out, [weth_address, mim_address].to_vec(), user_address, deadline )
+    let tx_receipt = router_contract.swap_eth_for_exact_tokens(amounts_out[1], [weth_address, mim_address].to_vec(), user_address, deadline )
     .value(eth_max_spend)
     .from(wallet_address)
     .gas(U256::from(50_000)) // this is crucial otherwise tx will get reverted without a reason
@@ -72,5 +72,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("MIM balance for user after first swap: {}", mim_balance);
     }
    
+
+    // second try, using swapExactETHForTokens
+    let tx_receipt2 = router_contract.swap_exact_eth_for_tokens(weth_amount_in, [weth_address, mim_address].to_vec(), user_address, deadline )
+    .value(weth_amount_in)
+    .from(wallet_address)
+    .gas(U256::from(50_000)) // this is crucial otherwise tx will get reverted without a reason
+    .send()
+    .await?
+    .await?
+    .unwrap(); 
+
+    println!("tx receipt 2: {:?}", tx_receipt2);
+
+    info!("wallet balance of ETH in ether after second swap: {}", format_units(client.get_balance(wallet_address, Option::None).await?, 18)?);
+
+    if let Ok(mim_balance) = mim_contract.balance_of(user_address).call().await {
+        info!("MIM balance for user after second swap: {}", mim_balance);
+    }
+   
+
     Ok(())
 }
