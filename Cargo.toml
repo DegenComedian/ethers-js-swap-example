@@ -1,0 +1,19 @@
+[package]
+name = "loading-token-smart-contract"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# rustls is for accessing https blockchain providers
+ethers = { version = "2.0", features=["rustls"]}
+# Ethers' async features rely upon the Tokio async runtime.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+# Flexible concrete Error Reporting type built on std::error::Error with customizable Reports
+eyre = "0.6"
+# logging
+log = "0.4.19"
+env_logger = "0.10.0"
+dotenv = "0.15.0"
+serde_json = "1.0.104"
