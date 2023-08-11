@@ -53,11 +53,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let deadline = U256::from(get_epoch_milliseconds()) + U256::from(60 * 1000);
 
-    // allow to spend max 1 eth
-    let avax_max_spend = parse_units(5, 18)?;
+    let eth_max_spend = parse_units(5, 18)?;
 
     let tx_receipt = router_contract.swap_eth_for_exact_tokens(amount_out, [weth_address, mim_address].to_vec(), user_address, deadline )
-    .value(avax_max_spend)
+    .value(eth_max_spend)
     .from(wallet_address)
     .gas(U256::from(50_000)) // this is crucial otherwise tx will get reverted without a reason
     .send()
@@ -67,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("tx receipt: {:?}", tx_receipt);
 
-    info!("wallet balance of AVAX in ether after first swap: {}", format_units(client.get_balance(wallet_address, Option::None).await?, 18)?);
+    info!("wallet balance of ETH in ether after first swap: {}", format_units(client.get_balance(wallet_address, Option::None).await?, 18)?);
 
     if let Ok(mim_balance) = mim_contract.balance_of(user_address).call().await {
         info!("MIM balance for user after first swap: {}", mim_balance);
